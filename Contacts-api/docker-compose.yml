@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: contacts_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: contacts_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    container_name: contacts_api
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/contacts_db
+      PRODUCTS_PER_PAGE: 10
+      CONTACTS_PER_PAGE: 20
+    ports:
+      - "8800:8800"
+    volumes:
+      - .:/app
+    command: >
+      sh -c "sleep 5 &&
+             python -c 'from database import engine, Base; Base.metadata.create_all(bind=engine)' &&
+             uvicorn main:app --host 0.0.0.0 --port 8800 --reload"
+
+volumes:
+  postgres_data:
